@@ -18,7 +18,7 @@ Completed:
 
 ## Publication state
 
-The Anna app exists as draft `exceptionos`, app ID 560. No remote version has been cut or submitted for Marketplace review yet. The code and submission copy are ready; store screenshots, a short demo video, repository publication, version push/cut, and the final external submission remain release actions.
+Anna app `exceptionos` (app ID 560) has immutable version `1.0.0` (version ID 1395). It was submitted to Anna Marketplace review on October 15, 2026 and is `pending_review`. The code and hackathon submission copy are ready; repository publication, store screenshots, and a short demo video remain presentation assets rather than application functionality.
 
 ## Preserved legacy prototype
 
