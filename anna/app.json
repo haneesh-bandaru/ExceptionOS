@@ -1,0 +1,9 @@
+{
+  "slug": "exceptionos",
+  "name": "ExceptionOS",
+  "version": "1.0.0",
+  "tagline": "Turn a stalled goal into one clear next action.",
+  "description": "Build an action plan with Anna, track evidence and progress, and finish what is stuck.",
+  "category": "productivity",
+  "pricing_model": "free"
+}

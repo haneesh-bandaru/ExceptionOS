@@ -1,0 +1,15 @@
+import test from 'node:test';import assert from 'node:assert/strict';
+import {createCase,plan,questions,similarity,contribute,redact,hashPassword,checkPassword,draft} from '../src/core.js';
+const make=(category='certificate')=>createCase('u1',{title:'My certificate delayed',description:'I have waited for the certificate for 4 months.',category,institution:'Example University',jurisdiction:'AP'});
+test('case initialization and status',()=>{const c=make();assert.equal(c.status,'created');assert.equal(c.timeline.length,1);assert.equal(c.userId,'u1');});
+test('rejects empty cases',()=>{assert.throws(()=>createCase('u',{}));});
+test('category fallback',()=>{assert.equal(make('INVALID').category,'other');});
+test('plans use non-assertive general guidance',()=>{const p=plan(make());assert.equal(p.steps.length,3);assert.match(p.disclaimer,/not legal advice/i);assert.equal(p.steps[0].evidenceType,'general_guidance');});
+test('questions ask for missing information',()=>{const c=make();c.institution='';assert.ok(questions(c).some(x=>x.includes('institution')));});
+test('knowledge is ignored until approved and public',()=>{const c=make();const k={category:c.category,institution:c.institution,jurisdiction:c.jurisdiction,visibility:'private',reviewStatus:'pending'};assert.equal(similarity(c,k),-1);k.visibility='public';k.reviewStatus='approved';assert.ok(similarity(c,k)>=10);});
+test('sharing requires explicit consent and resolved case',()=>{const c=make();assert.throws(()=>contribute(c,{consent:true,outcome:'The certificate arrived.'}));c.status='resolved';assert.throws(()=>contribute(c,{consent:false,outcome:'The certificate arrived.'}));});
+test('sharing starts private and unverified',()=>{const c=make();c.status='resolved';const k=contribute(c,{consent:true,outcome:'The certificate was delivered eventually.'});assert.equal(k.visibility,'private');assert.equal(k.evidenceStatus,'unverified');assert.equal(k.reviewStatus,'pending');});
+test('basic redaction blocks common patterns',()=>{const r=redact('My email is alex@example.com and phone 9876543210 and identifier 123456789012');assert.doesNotMatch(r,/alex@example.com|9876543210|123456789012/);});
+test('redaction is not represented as full anonymity',()=>{assert.match(redact('Student named Alice'),/Alice/);});
+test('password hashing accepts correct passwords',()=>{const h=hashPassword('secure-password');assert.ok(checkPassword('secure-password',h));assert.equal(checkPassword('incorrect',h),false);});
+test('document draft requires manual review',()=>{const d=draft(make());assert.match(d,/\[Your name\]/);assert.match(d,/Example University/);});

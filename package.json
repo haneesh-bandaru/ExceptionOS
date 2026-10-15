@@ -1,0 +1,24 @@
+{
+  "name": "exceptionos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test tests/*.test.js",
+    "test:repeat": "node --test tests/*.test.js && node --test tests/*.test.js && node --test tests/*.test.js",
+    "db:migrate": "node scripts/database.js migrate",
+    "db:backup": "node scripts/database.js backup",
+    "test:e2e": "playwright test",
+    "anna:validate": "npm run anna:build && cd anna && npx --yes @anna-ai/cli@0.1.58 validate --strict",
+    "anna:build": "node scripts/build-anna.js",
+    "anna:dev": "npm run anna:build && cd anna && npx --yes @anna-ai/cli@0.1.58 dev --slug exceptionos",
+    "anna:dev:offline": "npm run anna:build && cd anna && npx --yes @anna-ai/cli@0.1.58 dev --slug exceptionos --no-llm"
+  },
+  "engines": {
+    "node": ">=22.13"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.64.0"
+  }
+}
