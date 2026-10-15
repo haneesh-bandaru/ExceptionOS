@@ -11,7 +11,7 @@ The Anna app is a static ES-module bundle generated from `anna/src/`. There is n
 The manifest requests the narrow host surface used by the product:
 
 - `llm.complete` for consented action-plan generation
-- `storage.get` and `storage.set` under `storage.user` for the private workspace
+- `storage.get` and `storage.set` for the private user workspace
 - `window.ready` and `window.set_title` for lifecycle integration
 
 The bundle declares no external origins. It contains no credentials, account implementation, or user data.
