@@ -1,5 +1,5 @@
 import { AnnaAppRuntime } from '/static/anna-apps/_sdk/latest/index.js';
-import { WORKSPACE_KEY, emptyWorkspace, normalizeWorkspace } from './domain.js';
+import { WORKSPACE_KEY, emptyWorkspace, normalizeWorkspace, unwrapStorageValue } from './domain.js';
 
 let runtime = null;
 let connectionError = '';
@@ -24,7 +24,8 @@ export const platform = {
   async load() {
     if (!runtime) return normalizeWorkspace(JSON.parse(localStorage.getItem(WORKSPACE_KEY) || 'null'));
     const stored = await runtime.storage.get({ key: WORKSPACE_KEY });
-    return normalizeWorkspace(stored || JSON.parse(localStorage.getItem(WORKSPACE_KEY) || 'null'));
+    const value = unwrapStorageValue(stored);
+    return normalizeWorkspace(value || JSON.parse(localStorage.getItem(WORKSPACE_KEY) || 'null'));
   },
   async save(workspace) {
     const clean = normalizeWorkspace(workspace);

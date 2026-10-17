@@ -18,6 +18,10 @@ export function normalizeWorkspace(input) {
   return { version: WORKSPACE_VERSION, goals, activeGoalId };
 }
 
+export function unwrapStorageValue(stored) {
+  return stored?.value ?? stored;
+}
+
 function normalizeGoal(goal) {
   if (!goal || typeof goal !== 'object' || !goal.id || !goal.title) return null;
   const steps = Array.isArray(goal.steps) ? goal.steps.map((step, index) => ({

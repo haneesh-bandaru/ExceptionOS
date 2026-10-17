@@ -18,7 +18,7 @@ Completed:
 
 ## Publication state
 
-Anna app `exceptionos` (app ID 560) has immutable version `1.0.0` (version ID 1395). It was submitted to Anna Marketplace review on October 15, 2026 and is `pending_review`. The code and hackathon submission copy are ready; repository publication, store screenshots, and a short demo video remain presentation assets rather than application functionality.
+Anna app `exceptionos` (app ID 560) has immutable version `1.0.0` (version ID 1395). It was submitted to Anna Marketplace review on October 15, 2026 and is `pending_review`. A full desktop and mobile demo pass on October 17 found and fixed sandbox-dialog and storage-remount defects; see [DEMO_TEST_REPORT.md](./DEMO_TEST_REPORT.md). The code and hackathon submission copy are ready; store screenshots and a short demo video remain presentation assets rather than application functionality.
 
 ## Preserved legacy prototype
 

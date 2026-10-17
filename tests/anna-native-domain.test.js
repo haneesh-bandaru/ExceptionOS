@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addUpdate, applyPlan, createGoal, emptyWorkspace, nextStep, normalizeWorkspace, progress, resolveGoal, toggleStep, upsertGoal } from '../anna/src/domain.js';
+import { addUpdate, applyPlan, createGoal, emptyWorkspace, nextStep, normalizeWorkspace, progress, resolveGoal, toggleStep, unwrapStorageValue, upsertGoal } from '../anna/src/domain.js';
 
 test('goal lifecycle moves from outcome to plan to resolution', () => {
   let workspace = emptyWorkspace();
@@ -29,6 +29,12 @@ test('workspace normalization drops invalid records and strips unsafe evidence l
   assert.equal(clean.activeGoalId, 'g1');
   assert.equal(clean.goals[0].steps[0].sourceUrl, '');
   assert.throws(() => addUpdate(clean.goals[0], 'proof', 'http://insecure.example'), /https/);
+});
+
+test('Anna storage response unwraps saved workspace across remounts', () => {
+  const workspace = { version: 1, goals: [{ id: 'goal-1', title: 'Persist me' }], activeGoalId: 'goal-1' };
+  assert.equal(unwrapStorageValue({ value: workspace }), workspace);
+  assert.equal(unwrapStorageValue(workspace), workspace);
 });
 
 test('required fields and plan contract fail clearly', () => {

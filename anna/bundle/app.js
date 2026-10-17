@@ -6,6 +6,7 @@ const toast = document.querySelector('#toast');
 let workspace = emptyWorkspace();
 let view = 'home';
 let busy = false;
+let modal = null;
 
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const fmt = value => new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
@@ -30,7 +31,22 @@ function shell(content) {
       <div class="rail-foot"><span class="secure-dot"></span><span>Private Anna storage</span></div>
     </aside>
     <main>${content}</main>
-  </div>`;
+  </div>${renderModal()}`;
+}
+
+function renderModal() {
+  if (!modal) return '';
+  const goal = activeGoal();
+  const details = {
+    replan: { title: 'Rebuild this plan?', body: 'Anna will replace the current checklist. Your progress log and evidence will stay intact.', confirm: 'Rebuild plan' },
+    delete: { title: 'Delete this goal?', body: `This permanently removes “${goal?.title || 'this goal'}” and its local history.`, confirm: 'Delete goal' },
+    resolve: { title: 'Close this goal as resolved?', body: 'Record the outcome so you can understand what worked later.', confirm: 'Close as resolved' }
+  }[modal];
+  return `<div class="modal-backdrop" role="presentation"><section class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <span class="eyebrow">CONFIRM ACTION</span><h2 id="modal-title">${esc(details.title)}</h2><p>${esc(details.body)}</p>
+    ${modal === 'resolve' ? '<label>What happened?<textarea id="resolution-input" maxlength="1200" required autofocus placeholder="Record the result…"></textarea></label>' : ''}
+    <div class="modal-actions"><button class="secondary" data-action="modal-cancel">Cancel</button><button class="primary ${modal === 'delete' ? 'danger' : ''}" data-action="modal-confirm">${esc(details.confirm)}</button></div>
+  </section></div>`;
 }
 
 function renderHome() {
@@ -133,23 +149,33 @@ app.addEventListener('click', async event => {
   if (button.dataset.action === 'home') { view = 'home'; render(); return; }
   if (button.dataset.action === 'new') { view = 'new'; render(); return; }
   if (button.dataset.goal) { workspace.activeGoalId = button.dataset.goal; view = 'goal'; render(); return; }
+  if (button.dataset.action === 'modal-cancel') { modal = null; render(); return; }
   const goal = activeGoal();
   if (!goal) return;
   try {
     if (button.dataset.step) await persist(upsertGoal(workspace, toggleStep(goal, button.dataset.step)), 'Progress saved.');
     if (button.dataset.action === 'plan') await buildPlan(goal);
-    if (button.dataset.action === 'replan') {
-      const confirmed = confirm('Rebuilding replaces the current action checklist. Your progress log stays intact. Continue?');
-      if (confirmed) { const reset = { ...goal, steps: [], summary: '', questions: [] }; await persist(upsertGoal(workspace, reset)); }
-    }
-    if (button.dataset.action === 'resolve') {
-      const resolution = prompt('What happened? Record the outcome for your future reference.');
-      if (resolution) await persist(upsertGoal(workspace, resolveGoal(goal, resolution)), 'Goal closed as resolved.');
-    }
+    if (button.dataset.action === 'replan') { modal = 'replan'; render(); }
+    if (button.dataset.action === 'resolve') { modal = 'resolve'; render(); }
     if (button.dataset.action === 'reopen') await persist(upsertGoal(workspace, reopenGoal(goal)), 'Goal reopened.');
-    if (button.dataset.action === 'delete' && confirm(`Delete “${goal.title}” and its history?`)) {
-      const goals = workspace.goals.filter(item => item.id !== goal.id);
-      view = 'home'; await persist({ ...workspace, goals, activeGoalId: goals[0]?.id || null }, 'Goal deleted.');
+    if (button.dataset.action === 'delete') { modal = 'delete'; render(); }
+    if (button.dataset.action === 'modal-confirm') {
+      const action = modal;
+      if (action === 'resolve') {
+        const resolution = document.querySelector('#resolution-input')?.value;
+        if (!resolution?.trim()) return announce('Record the outcome before closing the goal.', 'error');
+        modal = null;
+        await persist(upsertGoal(workspace, resolveGoal(goal, resolution)), 'Goal closed as resolved.');
+      }
+      if (action === 'replan') {
+        modal = null;
+        await persist(upsertGoal(workspace, { ...goal, steps: [], summary: '', questions: [] }));
+      }
+      if (action === 'delete') {
+        const goals = workspace.goals.filter(item => item.id !== goal.id);
+        modal = null; view = 'home';
+        await persist({ ...workspace, goals, activeGoalId: goals[0]?.id || null }, 'Goal deleted.');
+      }
     }
   } catch (error) { announce(error.message, 'error'); }
 });
