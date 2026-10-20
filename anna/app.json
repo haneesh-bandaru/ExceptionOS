@@ -3,7 +3,14 @@
   "name": "ExceptionOS",
   "version": "1.0.1",
   "tagline": "Turn a stalled goal into one clear next action.",
-  "description": "Build an action plan with Anna, track evidence and progress, and finish what is stuck.",
+  "description": "ExceptionOS helps you move a personal, work, education, or administrative goal that has stalled. Describe the result you want, what is happening, and what you have already tried. With your consent, Anna turns that context into a short, ordered action plan with a clear next step and a concrete definition of done.\n\nWork through the checklist at your own pace, record progress notes and supporting links, and keep the full history beside the plan. When new information changes the situation, ExceptionOS clearly tells you that the current plan is out of date and lets you rebuild it with Anna using the latest updates. You can close a goal with a written outcome, reopen it later, or keep several active goals in one workspace.\n\nYour workspace is stored privately with your Anna account so goals and progress return when you reopen the App. ExceptionOS does not contact organizations, submit forms, or act on your behalf: you review every suggestion and control every action.",
   "category": "productivity",
-  "pricing_model": "free"
+  "pricing_model": "free",
+  "homepage_url": "https://github.com/haneesh-bandaru/ExceptionOS",
+  "logo_file": "listing-assets/logo.svg",
+  "screenshots": [
+    "listing-assets/01-home.png",
+    "listing-assets/02-action-plan.png",
+    "listing-assets/03-progress-update.png"
+  ]
 }

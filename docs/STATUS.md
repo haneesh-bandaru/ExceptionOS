@@ -1,4 +1,4 @@
-# Current project status — October 15, 2026
+# Current project status — October 20, 2026
 
 ## Submission product: complete and running
 
@@ -13,12 +13,14 @@ Completed:
 - Added multiple goals, ordered action checklists, next-action focus, progress, clarification questions, notes, HTTPS evidence links, resolution, reopen, and deletion.
 - Added responsive desktop/mobile UI, accessible labels, and reduced-motion support.
 - Added privacy documentation and a hackathon pitch/demo script.
-- Passed 43 automated tests and official strict Anna validation.
+- Passed 44 automated tests and official strict Anna validation.
 - Verified the real Anna harness, live model inference, window lifecycle, and Anna storage calls.
+- Added a complete Marketplace listing package: logo, three product screenshots, and a detailed description.
+- Fixed the five issues from Anna's first review; see [ANNA_REVIEW_FIX_REPORT.md](./ANNA_REVIEW_FIX_REPORT.md).
 
 ## Publication state
 
-Anna app `exceptionos` (app ID 560) has immutable version `1.0.0` (version ID 1395). It was submitted to Anna Marketplace review on October 15, 2026 and is `pending_review`. A full desktop and mobile demo pass on October 17 found and fixed sandbox-dialog and storage-remount defects; see [DEMO_TEST_REPORT.md](./DEMO_TEST_REPORT.md). The code and hackathon submission copy are ready; store screenshots and a short demo video remain presentation assets rather than application functionality.
+Anna app `exceptionos` (app ID 560) has immutable version `1.0.0` (version ID 1395). Anna returned five review findings on October 20, 2026. Version `1.0.1` is fixed and fully tested in the local Anna harness, including a production-equivalent APS restart test. Its listing metadata and image files pass Anna's dry run. It has not been uploaded, synced, cut, or resubmitted; those actions are intentionally waiting for the owner's explicit permission. A final Cloud Agent fresh-install run must follow the upload because a Cloud Agent cannot execute an unpublished local bundle.
 
 ## Preserved legacy prototype
 

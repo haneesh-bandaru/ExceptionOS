@@ -1,5 +1,5 @@
 import { platform } from './platform.js';
-import { addUpdate, applyPlan, createGoal, emptyWorkspace, nextStep, progress, reopenGoal, resolveGoal, toggleStep, upsertGoal } from './domain.js';
+import { addUpdate, applyPlan, createGoal, emptyWorkspace, nextStep, normalizeWorkspace, progress, reopenGoal, resolveGoal, toggleStep, upsertGoal } from './domain.js';
 
 const app = document.querySelector('#app');
 const toast = document.querySelector('#toast');
@@ -7,16 +7,30 @@ let workspace = emptyWorkspace();
 let view = 'home';
 let busy = false;
 let modal = null;
+let savingMessage = '';
 
 const esc = value => String(value ?? '').replace(/[&<>'"]/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[char]);
 const fmt = value => new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', year: 'numeric' }).format(new Date(value));
 const activeGoal = () => workspace.goals.find(goal => goal.id === workspace.activeGoalId) || null;
 const announce = (message, kind = '') => { toast.textContent = message; toast.className = `toast show ${kind}`; setTimeout(() => toast.className = 'toast', 3200); };
 
-async function persist(next, message) {
-  workspace = await platform.save(next);
+async function persist(next, message, pendingMessage = 'Saving…') {
+  const previous = workspace;
+  workspace = normalizeWorkspace(next);
+  savingMessage = pendingMessage;
   render();
-  if (message) announce(message);
+  announce(pendingMessage);
+  try {
+    workspace = await platform.save(workspace);
+    savingMessage = '';
+    render();
+    if (message) announce(message);
+  } catch (error) {
+    workspace = previous;
+    savingMessage = '';
+    render();
+    throw error;
+  }
 }
 
 function shell(content) {
@@ -31,7 +45,7 @@ function shell(content) {
       <div class="rail-foot"><span class="secure-dot"></span><span>Private Anna storage</span></div>
     </aside>
     <main>${content}</main>
-  </div>${renderModal()}`;
+  </div>${savingMessage ? `<div class="sync-indicator" role="status"><span class="spinner"></span>${esc(savingMessage)}</div>` : ''}${renderModal()}`;
 }
 
 function renderModal() {
@@ -106,7 +120,8 @@ function renderGoal(goal) {
         <div class="steps">${goal.steps.map((step, index) => `<article class="step ${step.completed ? 'complete' : ''}"><button class="check" data-step="${esc(step.id)}" aria-label="${step.completed ? 'Reopen' : 'Complete'} step">${step.completed ? '✓' : index + 1}</button><div><h3>${esc(step.title)}</h3><p>${esc(step.why)}</p><small>DONE WHEN · ${esc(step.doneWhen)}</small>${step.sourceUrl ? `<a href="${esc(step.sourceUrl)}" target="_blank" rel="noopener">User-provided source ↗</a>` : ''}</div></article>`).join('')}</div>
       </section>
     </div><aside>
-      ${goal.questions.length ? `<section class="panel questions"><span class="eyebrow">ANNA STILL WONDERS</span><ul>${goal.questions.map(q => `<li>${esc(q)}</li>`).join('')}</ul><p>Add answers as an update, then rebuild the plan.</p></section>` : ''}
+      ${goal.planNeedsRefresh && !resolved ? `<section class="refresh-notice" role="status"><span>↻</span><div><strong>New context is saved.</strong><p>The current plan and questions have not changed yet. Rebuild with Anna to include your latest update.</p><button class="secondary" data-action="replan">Rebuild plan with Anna</button></div></section>` : ''}
+      ${goal.questions.length ? `<section class="panel questions"><span class="eyebrow">ANNA STILL WONDERS</span><ul>${goal.questions.map(q => `<li>${esc(q)}</li>`).join('')}</ul><p>Answer in the progress log. After saving, use “Rebuild plan with Anna” to update the plan and questions.</p></section>` : ''}
       ${renderUpdates(goal)}
       ${!resolved ? `<button class="resolve-button" data-action="resolve">Close as resolved</button>` : ''}
     </aside></div>`}
@@ -114,11 +129,11 @@ function renderGoal(goal) {
 }
 
 function renderPlanStart(goal) {
-  return `<section class="plan-start"><div class="plan-symbol">✦</div><span class="eyebrow">ANNA PLANNING</span><h2>Turn this goal into the first move.</h2><p>Anna will read the information below and create 3–6 ordered actions. Review every suggestion before acting.</p>
+  return `<div class="preplan"><section class="plan-start"><div class="plan-symbol">✦</div><span class="eyebrow">ANNA PLANNING</span><h2>Turn this goal into the first move.</h2><p>Anna will read the information below and create 3–6 ordered actions. Review every suggestion before acting.</p>
     <dl><div><dt>Desired outcome</dt><dd>${esc(goal.outcome)}</dd></div>${goal.context ? `<div><dt>Context</dt><dd>${esc(goal.context)}</dd></div>` : ''}${goal.attempted ? `<div><dt>Already tried</dt><dd>${esc(goal.attempted)}</dd></div>` : ''}</dl>
     <label class="consent"><input type="checkbox" id="ai-consent"><span><strong>Build this plan with Anna</strong><small>I understand these goal details will be processed by Anna and its configured model provider.</small></span></label>
     <button class="primary wide" data-action="plan" ${busy ? 'disabled' : ''}>${busy ? '<span class="spinner"></span> Anna is building your plan…' : 'Build my action plan'}</button>
-  </section>`;
+  </section>${renderUpdates(goal)}</div>`;
 }
 
 function renderUpdates(goal) {
@@ -146,6 +161,7 @@ async function buildPlan(goal) {
 app.addEventListener('click', async event => {
   const button = event.target.closest('button');
   if (!button) return;
+  if (savingMessage) return;
   if (button.dataset.action === 'home') { view = 'home'; render(); return; }
   if (button.dataset.action === 'new') { view = 'new'; render(); return; }
   if (button.dataset.goal) { workspace.activeGoalId = button.dataset.goal; view = 'goal'; render(); return; }
@@ -153,7 +169,7 @@ app.addEventListener('click', async event => {
   const goal = activeGoal();
   if (!goal) return;
   try {
-    if (button.dataset.step) await persist(upsertGoal(workspace, toggleStep(goal, button.dataset.step)), 'Progress saved.');
+    if (button.dataset.step) await persist(upsertGoal(workspace, toggleStep(goal, button.dataset.step)), 'Progress saved.', 'Saving progress…');
     if (button.dataset.action === 'plan') await buildPlan(goal);
     if (button.dataset.action === 'replan') { modal = 'replan'; render(); }
     if (button.dataset.action === 'resolve') { modal = 'resolve'; render(); }
@@ -169,7 +185,7 @@ app.addEventListener('click', async event => {
       }
       if (action === 'replan') {
         modal = null;
-        await persist(upsertGoal(workspace, { ...goal, steps: [], summary: '', questions: [] }));
+        await persist(upsertGoal(workspace, { ...goal, steps: [], summary: '', questions: [], planNeedsRefresh: false }), 'Ready to rebuild with Anna.');
       }
       if (action === 'delete') {
         const goals = workspace.goals.filter(item => item.id !== goal.id);
@@ -189,7 +205,9 @@ app.addEventListener('submit', async event => {
       view = 'goal'; await persist(upsertGoal(workspace, goal), 'Goal created.');
     }
     if (event.target.id === 'update-form') {
-      await persist(upsertGoal(workspace, addUpdate(activeGoal(), data.body, data.url)), 'Update saved.');
+      const current = activeGoal();
+      const message = current.steps.length ? 'Update saved. Rebuild with Anna to refresh the plan.' : 'Update saved. Anna will include it when you build the plan.';
+      await persist(upsertGoal(workspace, addUpdate(current, data.body, data.url)), message, 'Saving update…');
     }
   } catch (error) { announce(error.message, 'error'); }
 });

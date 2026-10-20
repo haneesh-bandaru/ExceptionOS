@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { addUpdate, applyPlan, createGoal, emptyWorkspace, nextStep, normalizeWorkspace, progress, resolveGoal, toggleStep, unwrapStorageValue, upsertGoal } from '../anna/src/domain.js';
+import { addUpdate, applyPlan, createGoal, emptyWorkspace, nextStep, normalizeWorkspace, planRequest, progress, resolveGoal, toggleStep, unwrapStorageValue, upsertGoal } from '../anna/src/domain.js';
 
 test('goal lifecycle moves from outcome to plan to resolution', () => {
   let workspace = emptyWorkspace();
@@ -19,6 +19,14 @@ test('goal lifecycle moves from outcome to plan to resolution', () => {
   assert.equal(nextStep(goal).title, 'Send a focused request');
   goal = addUpdate(goal, 'Saved the acknowledgement email.', 'https://example.com/evidence');
   assert.equal(goal.updates[0].kind, 'evidence');
+  assert.equal(goal.planNeedsRefresh, true);
+  assert.deepEqual(planRequest(goal).recentUpdates[0], {
+    note: 'Saved the acknowledgement email.', kind: 'evidence', recordedAt: goal.updates[0].createdAt
+  });
+  goal = applyPlan(goal, { summary: 'Use the new context.', questions: [], steps: [
+    { title: 'Use the saved update', why: 'It narrows the request.', doneWhen: 'The revised request is ready.', sourceUrl: '' }
+  ] });
+  assert.equal(goal.planNeedsRefresh, false);
   goal = resolveGoal(goal, 'The organization issued its decision.');
   assert.equal(goal.status, 'resolved');
 });

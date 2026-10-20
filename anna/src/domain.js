@@ -46,7 +46,7 @@ function normalizeGoal(goal) {
     organization: text(goal.organization, 160), category: text(goal.category, 80) || 'Other',
     deadline: text(goal.deadline, 40), status: goal.status === 'resolved' ? 'resolved' : 'active',
     summary: text(goal.summary, 900), questions: Array.isArray(goal.questions) ? goal.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4) : [],
-    steps, updates, createdAt: goal.createdAt || now(), updatedAt: goal.updatedAt || now(),
+    steps, updates, planNeedsRefresh: Boolean(goal.planNeedsRefresh), createdAt: goal.createdAt || now(), updatedAt: goal.updatedAt || now(),
     resolvedAt: goal.resolvedAt || null, resolution: text(goal.resolution, 1200)
   };
 }
@@ -60,7 +60,7 @@ export function createGoal(fields) {
   return normalizeGoal({
     id: id(), title, outcome, context: fields.context, attempted: fields.attempted,
     organization: fields.organization, category: fields.category, deadline: fields.deadline,
-    status: 'active', summary: '', questions: [], steps: [], updates: [], createdAt, updatedAt: createdAt
+    status: 'active', summary: '', questions: [], steps: [], updates: [], planNeedsRefresh: false, createdAt, updatedAt: createdAt
   });
 }
 
@@ -85,7 +85,7 @@ export function applyPlan(goal, plan) {
   if (!steps.length) throw Error('Anna did not return an actionable step. Please add more context and retry.');
   return normalizeGoal({
     ...goal, summary: text(plan.summary, 900),
-    questions: plan.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4), steps,
+    questions: plan.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4), steps, planNeedsRefresh: false,
     updates: [{ id: id(), kind: 'milestone', body: 'Anna created the first action plan.', createdAt: now() }, ...goal.updates]
   });
 }
@@ -101,7 +101,25 @@ export function addUpdate(goal, body, url = '') {
   if (!cleanBody) throw Error('Write an update before saving.');
   const cleanUrl = safeUrl(url);
   if (url && !cleanUrl) throw Error('Evidence links must start with https://');
-  return normalizeGoal({ ...goal, updates: [{ id: id(), kind: cleanUrl ? 'evidence' : 'note', body: cleanBody, url: cleanUrl, createdAt: now() }, ...goal.updates] });
+  return normalizeGoal({ ...goal, planNeedsRefresh: goal.steps.length > 0, updates: [{ id: id(), kind: cleanUrl ? 'evidence' : 'note', body: cleanBody, url: cleanUrl, createdAt: now() }, ...goal.updates] });
+}
+
+export function planRequest(goal) {
+  const clean = normalizeGoal(goal);
+  return {
+    title: clean.title,
+    desiredOutcome: clean.outcome,
+    context: clean.context,
+    alreadyTried: clean.attempted,
+    organization: clean.organization,
+    category: clean.category,
+    targetDate: clean.deadline || null,
+    recentUpdates: clean.updates.slice(0, 10).map(update => ({
+      note: update.body,
+      kind: update.kind,
+      recordedAt: update.createdAt
+    }))
+  };
 }
 
 export function resolveGoal(goal, resolution) {

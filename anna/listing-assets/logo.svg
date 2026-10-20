@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">ExceptionOS logo</title>
+  <desc id="desc">A lime path forming an E and forward arrow on a deep green rounded square.</desc>
+  <rect width="512" height="512" rx="112" fill="#173f2b"/>
+  <path d="M144 132h225v64H208v28h122v64H208v28h161v64H144V132Z" fill="#d7f36b"/>
+  <path d="m315 224 72 64-72 64v-42h-73v-44h73v-42Z" fill="#fffefa"/>
+</svg>
