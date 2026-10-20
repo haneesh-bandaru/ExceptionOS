@@ -21,7 +21,7 @@ The deterministic run used the reported inputs: goal `秋招`, target `拿到2�
 Validation completed:
 
 - 44 automated tests passed.
-- The end-to-end reviewer browser regression passed.
+- The end-to-end reviewer browser regression passed, including a 390×844 mobile overflow check.
 - The real APS stop/start persistence regression passed and cleaned up its remote fixture.
 - `@anna-ai/cli@0.1.58 validate --strict` passed.
 - Marketplace metadata dry run passed with the new logo and screenshots.

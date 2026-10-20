@@ -62,5 +62,12 @@ await frame.getByText('Goal closed as resolved.', { exact: true }).waitFor();
 await frame.getByText('Received two offers and selected the best fit.', { exact: true }).waitFor();
 assert.equal(await frame.getByRole('button', { name: 'Reopen' }).isVisible(), true, 'resolved goal should show a reopen action');
 
-console.log('PASS reviewer flow: completion feedback, update guidance, remount persistence, rebuild, and resolution');
+await page.getByRole('button', { name: '📱 Mobile' }).click();
+await page.getByText('390×844', { exact: true }).waitFor();
+frame = findAppFrame();
+if (!frame) throw new Error('Anna App mobile iframe was not found.');
+await frame.getByRole('button', { name: 'Start with a goal' }).waitFor();
+assert.equal(await frame.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), true, 'mobile layout should not overflow horizontally');
+
+console.log('PASS reviewer flow: completion feedback, update guidance, remount persistence, rebuild, resolution, and mobile layout');
 await browser.close();
