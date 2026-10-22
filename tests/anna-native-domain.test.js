@@ -21,21 +21,25 @@ test('goal lifecycle moves from outcome to plan to resolution', () => {
   assert.equal(goal.updates[0].kind, 'evidence');
   assert.equal(goal.planNeedsRefresh, true);
   assert.deepEqual(planRequest(goal).recentUpdates[0], {
-    note: 'Saved the acknowledgement email.', kind: 'evidence', recordedAt: goal.updates[0].createdAt
+    note: 'Saved the acknowledgement email.', kind: 'evidence', evidenceUrl: 'https://example.com/evidence', recordedAt: goal.updates[0].createdAt
   });
   goal = applyPlan(goal, { summary: 'Use the new context.', questions: [], steps: [
     { title: 'Use the saved update', why: 'It narrows the request.', doneWhen: 'The revised request is ready.', sourceUrl: '' }
   ] });
   assert.equal(goal.planNeedsRefresh, false);
+  assert.equal(goal.steps[0].completed, true);
+  assert.equal(goal.planHistory.length, 1);
   goal = resolveGoal(goal, 'The organization issued its decision.');
   assert.equal(goal.status, 'resolved');
 });
 
 test('workspace normalization drops invalid records and strips unsafe evidence links', () => {
-  const clean = normalizeWorkspace({ activeGoalId: 'missing', goals: [null, { id: 'g1', title: 'Goal', outcome: 'Done', steps: [{ title: 'Step', doneWhen: 'Complete', sourceUrl: 'javascript:alert(1)' }] }] });
+  const clean = normalizeWorkspace({ activeGoalId: 'missing', goals: [null, { id: 'g1', title: 'Goal', outcome: 'Done', steps: [null, { title: 'Step', doneWhen: 'Complete', sourceUrl: 'javascript:alert(1)' }], updates: [null], planHistory: [null, { steps: [null, { title: 'Earlier action' }] }] }] });
   assert.equal(clean.goals.length, 1);
   assert.equal(clean.activeGoalId, 'g1');
   assert.equal(clean.goals[0].steps[0].sourceUrl, '');
+  assert.equal(clean.goals[0].updates.length, 0);
+  assert.equal(clean.goals[0].planHistory[0].steps[0].title, 'Earlier action');
   assert.throws(() => addUpdate(clean.goals[0], 'proof', 'http://insecure.example'), /https/);
 });
 
@@ -43,6 +47,33 @@ test('Anna storage response unwraps saved workspace across remounts', () => {
   const workspace = { version: 1, goals: [{ id: 'goal-1', title: 'Persist me' }], activeGoalId: 'goal-1' };
   assert.equal(unwrapStorageValue({ value: workspace }), workspace);
   assert.equal(unwrapStorageValue(workspace), workspace);
+  assert.equal(unwrapStorageValue({ value: null }), null);
+});
+
+test('rebuild input retains completed work, unanswered questions and evidence context', () => {
+  let goal = createGoal({ title: '秋招', outcome: '拿到2个offer' });
+  goal = applyPlan(goal, { summary: 'Search', questions: ['Target role?'], steps: [
+    { title: 'Prepare CV', why: 'Applications', doneWhen: 'CV ready', sourceUrl: '' }
+  ] });
+  goal = toggleStep(goal, goal.steps[0].id);
+  goal = addUpdate(goal, '市场相关岗位', 'https://example.com/jobs');
+  const input = planRequest(goal);
+  assert.equal(input.currentPlan[0].completed, true);
+  assert.equal(input.outstandingQuestions[0], 'Target role?');
+  assert.equal(input.recentUpdates.length, 1);
+  assert.equal(input.recentUpdates[0].note, '市场相关岗位');
+  const next = applyPlan(goal, { summary: 'Marketing', changeSummary: 'Focused on marketing', questions: [], steps: [
+    { title: 'Prepare CV', doneWhen: 'CV ready' },
+    { title: 'Shortlist marketing roles', doneWhen: 'Five roles listed', sourceUrl: 'https://example.com/jobs' }
+  ] });
+  assert.equal(next.steps.length, 2);
+  assert.equal(next.steps[0].id, goal.steps[0].id);
+  assert.equal(next.steps[0].completed, true);
+  assert.equal(next.steps[1].sourceUrl, 'https://example.com/jobs');
+  assert.equal(next.questions.length, 0);
+  assert.equal(next.changeSummary, 'Focused on marketing');
+  assert.equal(next.planHistory[0].steps[0].completed, true);
+  assert.equal(goal.questions.length, 1, 'preview construction does not mutate saved goal');
 });
 
 test('required fields and plan contract fail clearly', () => {

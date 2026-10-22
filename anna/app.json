@@ -1,16 +1,17 @@
 {
   "slug": "exceptionos",
   "name": "ExceptionOS",
-  "version": "1.0.1",
-  "tagline": "Turn a stalled goal into one clear next action.",
-  "description": "ExceptionOS helps you move a personal, work, education, or administrative goal that has stalled. Describe the result you want, what is happening, and what you have already tried. With your consent, Anna turns that context into a short, ordered action plan with a clear next step and a concrete definition of done.\n\nWork through the checklist at your own pace, record progress notes and supporting links, and keep the full history beside the plan. When new information changes the situation, ExceptionOS clearly tells you that the current plan is out of date and lets you rebuild it with Anna using the latest updates. You can close a goal with a written outcome, reopen it later, or keep several active goals in one workspace.\n\nYour workspace is stored privately with your Anna account so goals and progress return when you reopen the App. ExceptionOS does not contact organizations, submit forms, or act on your behalf: you review every suggestion and control every action.",
+  "version": "1.1.0",
+  "tagline": "Paste any message that needs a reply. See what they want, and get a draft in one step.",
+  "description": "Got an email from a recruiter, school, landlord, government office, or client and not sure how to answer? Paste it into ExceptionOS. In one step, Anna shows what they are asking for, any deadline as written, and what may be blocking progress, with each point quoted from the original message. Then it drafts a reply you can edit. Missing details become placeholders like [YOUR PORTFOLIO LINK], so nothing is invented.\n\nStill waiting to hear back? Describe your last message and Anna drafts a short, polite follow-up. Copy it into your own email or chat app, record that you sent it, and choose a check-in date. The Attention today list shows what is due when you return. Later replies keep the earlier conversation, so you are not asked to resend what you already sent.\n\nFor bigger situations, start with a goal and Anna builds a short action plan that you can rebuild as things change. Available in English and Simplified Chinese. Everything is saved privately in your Anna account. ExceptionOS never sends messages or contacts anyone for you, and Anna only processes your content when you tick the consent box.\n\n简体中文：粘贴任何需要回复的消息，Anna 帮你读懂对方的要求并起草回复；还没收到回复时，也能起草礼貌的跟进消息。",
   "category": "productivity",
   "pricing_model": "free",
   "homepage_url": "https://github.com/haneesh-bandaru/ExceptionOS",
   "logo_file": "listing-assets/logo.svg",
   "screenshots": [
     "listing-assets/01-home.png",
-    "listing-assets/02-action-plan.png",
-    "listing-assets/03-progress-update.png"
+    "listing-assets/02-reply-draft.png",
+    "listing-assets/03-follow-up.png",
+    "listing-assets/04-action-plan.png"
   ]
 }

@@ -1,0 +1,68 @@
+{
+  "date": "2026-10-21",
+  "boundary": "Real Anna application modules; synthetic SDK/storage/model. Not a Cloud Agent test.",
+  "resolvedGoalMutation": {
+    "before": false,
+    "after": true,
+    "status": "resolved"
+  },
+  "modalKeyboard": {
+    "focusTrail": [
+      {
+        "element": "BUTTON",
+        "text": "Cancel",
+        "insideDialog": true
+      },
+      {
+        "element": "BUTTON",
+        "text": "Close as resolved",
+        "insideDialog": true
+      },
+      {
+        "element": "BODY",
+        "text": "EExceptionOS\n      + New goal\n      Switch goalChoose a goal…Audit app",
+        "insideDialog": false
+      },
+      {
+        "element": "BUTTON",
+        "text": "EExceptionOS",
+        "insideDialog": false
+      }
+    ],
+    "dialogRemainsAfterEscape": true
+  },
+  "proposalNavigation": {
+    "previewAfterSameGoalNavigation": 0,
+    "currentPlanPreserved": true,
+    "modelCalls": 1
+  },
+  "noReplyDraft": {
+    "savedReplies": 0,
+    "draftFormCount": 0,
+    "emptyMessage": "Your next move starts with the latest reply.\n\nAnna can identify what is requested, show supporting quotes, and help you prepare a response."
+  },
+  "replyChronology": {
+    "modelFirstReply": {
+      "sourceText": "Old message: come to the office.",
+      "sender": "",
+      "receivedOn": "2026-10-20",
+      "lastSentResponse": ""
+    },
+    "selectedAsLatest": "2026-10-20"
+  },
+  "replyContext": {
+    "keys": [
+      "title",
+      "desiredOutcome",
+      "context",
+      "alreadyTried",
+      "organization",
+      "reply",
+      "recentUpdates",
+      "analysis",
+      "lastSentResponse",
+      "extraContext"
+    ],
+    "containsSiblingReply": false
+  }
+}

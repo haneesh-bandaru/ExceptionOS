@@ -48,10 +48,10 @@ await frame.getByText('市场相关岗位', { exact: true }).waitFor();
 assert.equal(await frame.getByText('20%', { exact: true }).isVisible(), true, 'progress should persist after remount');
 
 await frame.getByRole('button', { name: 'Rebuild plan with Anna' }).click();
-await frame.getByRole('button', { name: 'Rebuild plan', exact: true }).click();
-await frame.locator('#ai-consent').check();
-await frame.getByRole('button', { name: 'Build my action plan' }).click();
-await frame.getByText('Your action plan is ready.', { exact: true }).waitFor();
+await frame.locator('#replan-consent').check();
+await frame.getByRole('button', { name: 'Generate updated plan', exact: true }).click();
+await frame.getByRole('button', { name: 'Apply updated plan' }).click();
+await frame.getByText('Updated plan applied. Completed actions retained.', { exact: true }).waitFor();
 await frame.getByText('市场相关岗位', { exact: true }).waitFor();
 assert.equal(await frame.getByText('New context is saved.', { exact: true }).count(), 0, 'rebuild should clear the stale-plan notice');
 
@@ -60,7 +60,7 @@ await frame.locator('#resolution-input').fill('Received two offers and selected 
 await frame.getByRole('button', { name: 'Close as resolved', exact: true }).last().click();
 await frame.getByText('Goal closed as resolved.', { exact: true }).waitFor();
 await frame.getByText('Received two offers and selected the best fit.', { exact: true }).waitFor();
-assert.equal(await frame.getByRole('button', { name: 'Reopen' }).isVisible(), true, 'resolved goal should show a reopen action');
+assert.equal(await frame.getByRole('button', { name: 'Reopen', exact: true }).isVisible(), true, 'resolved goal should show a reopen action');
 
 await page.getByRole('button', { name: '📱 Mobile' }).click();
 await page.getByText('390×844', { exact: true }).waitFor();

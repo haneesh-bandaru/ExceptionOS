@@ -1,3 +1,5 @@
+import { addReply, normalizeFollowUp, normalizeOutreach, normalizeReplies, setLastContact } from './followup.js';
+
 export const WORKSPACE_VERSION = 1;
 export const WORKSPACE_KEY = 'exceptionos.workspace.v1';
 
@@ -19,12 +21,12 @@ export function normalizeWorkspace(input) {
 }
 
 export function unwrapStorageValue(stored) {
-  return stored?.value ?? stored;
+  return stored && Object.hasOwn(stored, 'value') ? stored.value : stored;
 }
 
 function normalizeGoal(goal) {
   if (!goal || typeof goal !== 'object' || !goal.id || !goal.title) return null;
-  const steps = Array.isArray(goal.steps) ? goal.steps.map((step, index) => ({
+  const steps = Array.isArray(goal.steps) ? goal.steps.filter(step => step && typeof step === 'object').map((step, index) => ({
     id: text(step.id, 120) || `${goal.id}-step-${index + 1}`,
     title: text(step.title, 240),
     why: text(step.why, 500),
@@ -33,7 +35,7 @@ function normalizeGoal(goal) {
     completed: Boolean(step.completed),
     completedAt: step.completedAt || null
   })).filter(step => step.title) : [];
-  const updates = Array.isArray(goal.updates) ? goal.updates.map(update => ({
+  const updates = Array.isArray(goal.updates) ? goal.updates.filter(update => update && typeof update === 'object').map(update => ({
     id: text(update.id, 120) || id(),
     body: text(update.body, 1200),
     createdAt: update.createdAt || now(),
@@ -45,8 +47,16 @@ function normalizeGoal(goal) {
     context: text(goal.context, 2400), attempted: text(goal.attempted, 1200),
     organization: text(goal.organization, 160), category: text(goal.category, 80) || 'Other',
     deadline: text(goal.deadline, 40), status: goal.status === 'resolved' ? 'resolved' : 'active',
-    summary: text(goal.summary, 900), questions: Array.isArray(goal.questions) ? goal.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4) : [],
-    steps, updates, planNeedsRefresh: Boolean(goal.planNeedsRefresh), createdAt: goal.createdAt || now(), updatedAt: goal.updatedAt || now(),
+    followUp: normalizeFollowUp(goal.followUp), replies: normalizeReplies(goal.replies), outreach: normalizeOutreach(goal.outreach),
+    summary: text(goal.summary, 900), changeSummary: text(goal.changeSummary, 900),
+    questions: Array.isArray(goal.questions) ? goal.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4) : [],
+    planHistory: Array.isArray(goal.planHistory) ? goal.planHistory.filter(snapshot => snapshot && typeof snapshot === 'object').slice(0, 5).map(snapshot => ({
+      savedAt: text(snapshot.savedAt, 40), summary: text(snapshot.summary, 900),
+      steps: Array.isArray(snapshot.steps) ? snapshot.steps.filter(step => step && typeof step === 'object').slice(0, 100).map(step => ({
+        title: text(step.title, 240), completed: Boolean(step.completed), doneWhen: text(step.doneWhen, 500)
+      })) : []
+    })) : [],
+    steps, updates, planNeedsRefresh: Boolean(goal.planNeedsRefresh), titleFromSource: Boolean(goal.titleFromSource), createdAt: goal.createdAt || now(), updatedAt: goal.updatedAt || now(),
     resolvedAt: goal.resolvedAt || null, resolution: text(goal.resolution, 1200)
   };
 }
@@ -64,6 +74,23 @@ export function createGoal(fields) {
   });
 }
 
+// One-step entry: a goal created from a pasted message, or from the user's last unanswered contact.
+export function quickStartGoal(fields, defaults = {}) {
+  const waiting = fields.mode === 'waiting';
+  const source = text(waiting ? fields.lastContact : fields.sourceText, 6000);
+  if (!source) throw Error(waiting ? 'Describe your last message before drafting a follow-up.' : 'Paste the message before continuing.');
+  const firstLine = source.split(/\n/).map(line => line.trim()).find(Boolean) || '';
+  const title = text(fields.organization, 160) || text(fields.sender, 160) || (firstLine.length > 60 ? `${firstLine.slice(0, 57)}…` : firstLine);
+  let goal = createGoal({
+    title: title || defaults.title || 'Follow-up', outcome: text(fields.outcome, 800) || defaults.outcome || 'Respond clearly and move this forward.',
+    organization: fields.organization, category: 'Other'
+  });
+  goal = waiting
+    ? setLastContact(goal, { lastContact: source, lastContactOn: fields.lastContactOn })
+    : addReply(goal, { sourceText: source, sender: fields.sender, receivedOn: fields.receivedOn });
+  return normalizeGoal({ ...goal, titleFromSource: !text(fields.organization, 160) && !text(fields.sender, 160) });
+}
+
 export function upsertGoal(workspace, goal) {
   const clean = normalizeGoal({ ...goal, updatedAt: now() });
   if (!clean) throw Error('This goal is incomplete.');
@@ -77,20 +104,26 @@ export function applyPlan(goal, plan) {
   if (!plan || typeof plan.summary !== 'string' || !Array.isArray(plan.steps) || !Array.isArray(plan.questions)) {
     throw Error('Anna returned an unexpected plan. Please try again.');
   }
-  const suppliedUrls = new Set(`${goal.outcome} ${goal.context} ${goal.attempted}`.match(/https:\/\/[^\s<>"']+/g) || []);
-  const steps = plan.steps.slice(0, 6).map(step => ({
+  const suppliedUrls = new Set(`${goal.outcome} ${goal.context} ${goal.attempted} ${goal.updates.map(update => `${update.body} ${update.url || ''}`).join(' ')} ${(goal.replies || []).slice(0, 4).map(reply => reply.sourceText).join(' ')} ${goal.outreach?.lastContact || ''}`.match(/https:\/\/[^\s<>"']+/g) || []);
+  const completed = goal.steps.filter(step => step.completed);
+  const completedTitles = new Set(completed.map(step => step.title.toLocaleLowerCase()));
+  const steps = plan.steps.slice(0, 6).filter(step => step && typeof step === 'object').map(step => ({
     id: id(), title: text(step.title, 240), why: text(step.why, 500),
     doneWhen: text(step.doneWhen, 500), sourceUrl: suppliedUrls.has(step.sourceUrl) ? safeUrl(step.sourceUrl) : '', completed: false, completedAt: null
-  })).filter(step => step.title && step.doneWhen);
+  })).filter(step => step.title && step.doneWhen && !completedTitles.has(step.title.toLocaleLowerCase()));
   if (!steps.length) throw Error('Anna did not return an actionable step. Please add more context and retry.');
   return normalizeGoal({
     ...goal, summary: text(plan.summary, 900),
-    questions: plan.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4), steps, planNeedsRefresh: false,
-    updates: [{ id: id(), kind: 'milestone', body: 'Anna created the first action plan.', createdAt: now() }, ...goal.updates]
+    changeSummary: text(plan.changeSummary, 900),
+    questions: plan.questions.map(q => text(q, 300)).filter(Boolean).slice(0, 4),
+    steps: [...completed, ...steps], planNeedsRefresh: false,
+    planHistory: goal.steps.length ? [{ savedAt: now(), summary: goal.summary, steps: goal.steps }, ...(goal.planHistory || [])].slice(0, 5) : goal.planHistory,
+    updates: [{ id: id(), kind: 'milestone', body: goal.steps.length ? 'Reviewed and applied an updated Anna plan. Completed actions were retained.' : 'Anna created the first action plan.', createdAt: now() }, ...goal.updates]
   });
 }
 
 export function toggleStep(goal, stepId) {
+  if (goal.status === 'resolved') throw Error('Reopen this goal before changing its checklist.');
   return normalizeGoal({ ...goal, steps: goal.steps.map(step => step.id === stepId
     ? { ...step, completed: !step.completed, completedAt: step.completed ? null : now() }
     : step) });
@@ -98,6 +131,7 @@ export function toggleStep(goal, stepId) {
 
 export function addUpdate(goal, body, url = '') {
   const cleanBody = text(body, 1200);
+  if (goal.status === 'resolved') throw Error('Reopen this goal before adding updates.');
   if (!cleanBody) throw Error('Write an update before saving.');
   const cleanUrl = safeUrl(url);
   if (url && !cleanUrl) throw Error('Evidence links must start with https://');
@@ -114,12 +148,25 @@ export function planRequest(goal) {
     organization: clean.organization,
     category: clean.category,
     targetDate: clean.deadline || null,
-    recentUpdates: clean.updates.slice(0, 10).map(update => ({
+    currentPlan: clean.steps.map(step => ({ title: step.title, doneWhen: step.doneWhen, completed: step.completed })),
+    outstandingQuestions: clean.questions,
+    followUp: clean.followUp,
+    lastContact: clean.outreach.lastContact ? { text: clean.outreach.lastContact, on: clean.outreach.lastContactOn || null } : null,
+    followUpsSent: clean.outreach.sent.slice(0, 3).map(item => ({ body: item.body, sentOn: item.sentAt?.slice(0, 10) || null })),
+    recentReplies: clean.replies.slice(0, 4).map(reply => ({ sourceText: reply.sourceText, sender: reply.sender, receivedOn: reply.receivedOn, lastSentResponse: reply.sentResponses[0]?.body || '' })),
+    recentUpdates: clean.updates.filter(update => update.kind !== 'milestone').slice(0, 10).map(update => ({
       note: update.body,
       kind: update.kind,
+      evidenceUrl: update.url || '',
       recordedAt: update.createdAt
     }))
   };
+}
+
+// Replace a title derived from the message's first line with Anna's short label, once.
+export function applySuggestedTitle(goal, title) {
+  const clean = text(title, 80);
+  return goal.titleFromSource && clean ? normalizeGoal({ ...goal, title: clean, titleFromSource: false }) : goal;
 }
 
 export function resolveGoal(goal, resolution) {

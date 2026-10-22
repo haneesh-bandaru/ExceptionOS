@@ -1,6 +1,9 @@
 node_modules/
 data/*.json
 .env
+.env.*
+!.env.example
+.openai/
 .DS_Store
 data/*.sqlite*
 data/*.db*

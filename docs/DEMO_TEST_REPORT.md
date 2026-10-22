@@ -1,5 +1,7 @@
 # ExceptionOS Demo Test Report
 
+> Historical October 17 run. This does not certify the current candidate or a Cloud Agent fresh install. Use [ANNA_REVIEW_FIX_REPORT.md](./ANNA_REVIEW_FIX_REPORT.md) for the October 21 evidence, changed behavior, and outstanding release gates.
+
 **Date:** October 17, 2026  
 **Environment:** Anna development harness, desktop 1100×800 and mobile 390×844  
 **Result:** PASS after two defects found during the session were fixed and retested
